@@ -1,0 +1,3 @@
+target.app: "apps/lidar"
+target.bsp: "hw/bsp/nucleo-l476rg"
+target.build_profile: "debug"
