@@ -7,6 +7,8 @@
 #include "bsp/bsp.h"
 #include "hal/hal_gpio.h"
 #include "ws2812.h"
+#include <fifo/fifo.h>
+#include <raw_uart/raw_uart.h>
 
 
 #define BLINK_TASK_PRI         (99)
@@ -18,38 +20,48 @@ extern uint32_t SystemCoreClock;
 
 void blink_task_fn(void *arg) {
 
-    // hal_gpio_init_out(LED_BLINK_PIN, 0);
+    console_printf("LIDAR Test!\n");
+
     ws2812_init();
 
+    ws2812_write();
+
     while(1) {
-        for (uint8_t led = 1; led < 24; led++) {
-            os_time_delay(OS_TICKS_PER_SEC/32);
-            ws2812_set_pixel(led,10,0,0);
+        for (uint16_t led = 0; led < WS2812_NUM_PIXELS; led++) {
+            os_time_delay(10);
+            ws2812_set_pixel(led,100,0,0);
             ws2812_write();
-            os_time_delay(OS_TICKS_PER_SEC/32);
+            os_time_delay(10);
             ws2812_set_pixel(led,0,0,0);
             ws2812_write();
         }
 
-        for (uint8_t led = 24; led > 1; led--) {
-            os_time_delay(OS_TICKS_PER_SEC/32);
-            ws2812_set_pixel(led,10,0,0);
+        for (uint16_t led = WS2812_NUM_PIXELS-2; led > 1; led--) {
+            os_time_delay(10);
+            ws2812_set_pixel(led,100,0,0);
             ws2812_write();
-            os_time_delay(OS_TICKS_PER_SEC/32);
+            os_time_delay(10);
             ws2812_set_pixel(led,0,0,0);
             ws2812_write();
         }
-        // hal_gpio_toggle(LED_BLINK_PIN);
-        // console_printf("Tick...\n");
-        //
     }
 
+}
+
+void uart_rx_handler(struct os_event *ev) {
+    fifo_t *fifo = ev->ev_arg;
+
+    while(fifo_size(fifo)) {
+        console_printf("%c", (char)fifo_pop(fifo));
+    }
 }
 
 int
 main(int argc, char **argv)
 {
     sysinit();
+
+    raw_uart_init(&uart_rx_handler);
 
     os_task_init(
         &blink_task,

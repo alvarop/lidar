@@ -10,4 +10,5 @@ pkg.deps:
     - "@apache-mynewt-core/hw/hal"
     - "@apache-mynewt-core/sys/console/full"
     - "@apache-mynewt-core/sys/log/stub"
+    - "libs/drivers/raw_uart"
 
