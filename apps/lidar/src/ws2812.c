@@ -11,9 +11,8 @@
 // Number of actual bytes it takes to encode WS2812 byte
 #define BYTE_LEN (9)
 
-// First and last bytes must be zero
-static uint8_t pattern[BYTE_LEN * 3 * WS2812_NUM_PIXELS + 2];
-
+// Last byte must be zero
+static uint8_t pattern[BYTE_LEN * 3 * WS2812_NUM_PIXELS + 1];
 
 // Look up table for all 256 bytes
 static const uint8_t ws2812_lut[256][BYTE_LEN] = {
@@ -293,9 +292,6 @@ static struct hal_spi_settings spi_settings = {
 
 void ws2812_write() {
 
-  pattern[BYTE_LEN * 3 * WS2812_NUM_PIXELS] = 0;
-  pattern[BYTE_LEN * 3 * WS2812_NUM_PIXELS+1] = 0;
-
   hal_spi_txrx(0, pattern ,NULL, sizeof(pattern)-1);
 
 }
@@ -304,7 +300,6 @@ int ws2812_init(void){
     hal_spi_config(0, &spi_settings);
     hal_spi_enable(0);
 
-    pattern[0] = 0;
     pattern[sizeof(pattern)] = 0;
 
     for(uint16_t pixel = 0; pixel < WS2812_NUM_PIXELS; pixel++) {
