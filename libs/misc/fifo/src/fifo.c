@@ -60,3 +60,8 @@ uint8_t fifo_pop(fifo_t *fifo) {
 uint8_t fifo_peek(fifo_t *fifo, uint32_t byte) {
   return fifo->buff[(fifo->start + byte) & fifo->size_mask];
 }
+
+void fifo_flush(fifo_t *fifo) {
+  fifo->start = 0;
+  fifo->end = 0;
+}

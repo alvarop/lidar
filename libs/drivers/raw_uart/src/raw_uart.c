@@ -62,7 +62,8 @@ int32_t raw_uart_init(void (*rx_ev_fn)(struct os_event *ev)) {
 
     return rval;
 }
-int32_t raw_uart_tx(uint32_t len, void * buff) {
+
+int32_t raw_uart_tx(void * buff, uint32_t len) {
     int32_t rval = 0;
     uint8_t *byte = (uint8_t *)buff;
 
@@ -72,4 +73,9 @@ int32_t raw_uart_tx(uint32_t len, void * buff) {
         uart_blocking_tx(uart_dev, *byte++);
     }
     return rval;
+}
+
+int32_t raw_uart_flush_rx() {
+    fifo_flush(&rx_fifo);
+    return 0;
 }

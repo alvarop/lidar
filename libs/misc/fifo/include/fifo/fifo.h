@@ -15,5 +15,6 @@ uint32_t fifo_size(fifo_t *fifo);
 uint8_t fifo_push(fifo_t *fifo, uint8_t byte);
 uint8_t fifo_pop(fifo_t *fifo);
 uint8_t fifo_peek(fifo_t *fifo, uint32_t byte);
+void fifo_flush(fifo_t *fifo);
 
 #endif
