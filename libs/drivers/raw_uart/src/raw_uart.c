@@ -3,12 +3,11 @@
 #include <uart/uart.h>
 #include <bsp/bsp.h>
 #include <hal/hal_gpio.h>
-#include <fifo/fifo.h>
 #include <os/os.h>
 
 static struct uart_dev *uart_dev;
 
-#define RAW_UART_RX_FIFO_SIZE (128)
+#define RAW_UART_RX_FIFO_SIZE (1024)
 
 static fifo_t rx_fifo;
 static uint8_t rx_fifo_buff[RAW_UART_RX_FIFO_SIZE];
@@ -24,11 +23,13 @@ static int raw_uart_tx_char(void *arg)
 
 static int raw_uart_rx_char(void *arg, uint8_t byte)
 {
+    hal_gpio_write(MCU_GPIO_PORTB(15), 1);
     fifo_push(&rx_fifo, byte);
     // signal packet processor that new data is available
     if(raw_uart_rx_ev.ev_cb != NULL) {
         os_eventq_put(os_eventq_dflt_get(), &raw_uart_rx_ev);
     }
+    hal_gpio_write(MCU_GPIO_PORTB(15), 0);
     return 0;
 }
 
@@ -75,7 +76,11 @@ int32_t raw_uart_tx(void * buff, uint32_t len) {
     return rval;
 }
 
-int32_t raw_uart_flush_rx() {
-    fifo_flush(&rx_fifo);
-    return 0;
+int32_t raw_uart_get_rx_fifo(fifo_t **fifo) {
+    if(fifo) {
+        *fifo = &rx_fifo;
+        return 0;
+    } else {
+        return -1;
+    }
 }

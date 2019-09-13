@@ -26,4 +26,10 @@ typedef struct {
     uint8_t  type;
 } __attribute__((packed)) rplidar_rsp_header_t;
 
+typedef struct {
+    uint8_t quality;
+    uint16_t angle;
+    uint16_t distance;
+} __attribute__((packed)) rplidar_scan_packet_t;
+
 #endif

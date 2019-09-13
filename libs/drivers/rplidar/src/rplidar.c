@@ -1,5 +1,7 @@
 #include <rplidar/rplidar.h>
 #include <console/console.h>
+#include <bsp/bsp.h>
+#include <hal/hal_gpio.h>
 #include <raw_uart/raw_uart.h>
 #include <fifo/fifo.h>
 #include "protocol.h"
@@ -13,7 +15,12 @@ static struct os_sem sem_rx_data;
 static volatile bool wait_for_rx = false;
 
 static uint8_t rxbuff[RX_BUFF_SIZE];
-static uint16_t rxbuff_idx = 0;
+
+static fifo_t *rx_fifo;
+
+#define BINS 360
+
+uint16_t distances[BINS];
 
 uint32_t send_command(uint8_t command, const void * payload, uint8_t len) {
     uint32_t rval = 0;
@@ -52,36 +59,48 @@ uint32_t send_command(uint8_t command, const void * payload, uint8_t len) {
 
 
 void rx_handler(struct os_event *ev) {
-    fifo_t *fifo = ev->ev_arg;
-
-    while(fifo_size(fifo) && rxbuff_idx < RX_BUFF_SIZE) {
-        rxbuff[rxbuff_idx++] = fifo_pop(fifo);
-    }
-
+    // fifo_t *fifo = ev->ev_arg;
+    hal_gpio_write(MCU_GPIO_PORTB(1), 1);
     if(wait_for_rx) {
         wait_for_rx = false;
         os_sem_release(&sem_rx_data);
     }
+    hal_gpio_write(MCU_GPIO_PORTB(1), 0);
+}
+
+void rplidar_enable_motor() {
+    hal_gpio_write(MCU_GPIO_PORTC(4), 1);
+}
+
+void rplidar_disable_motor() {
+    hal_gpio_write(MCU_GPIO_PORTC(4), 0);
 }
 
 int32_t rplidar_init() {
     console_printf("RPLidar Init\n");
 
+    hal_gpio_init_out(MCU_GPIO_PORTC(4), 0);
+
     wait_for_rx = false;
     os_sem_init(&sem_rx_data, 0);
 
     raw_uart_init(&rx_handler);
+    raw_uart_get_rx_fifo(&rx_fifo);
+
+    rplidar_stop_scan();
 
     return 0;
 }
 
-int32_t rplidar_read(uint16_t len, os_time_t timeout) {
+int32_t rplidar_read(uint8_t *buff, uint16_t len, os_time_t timeout) {
     os_error_t rval;
 
     do {
         wait_for_rx = true;
+        hal_gpio_write(MCU_GPIO_PORTB(13), 1);
         rval = os_sem_pend(&sem_rx_data, timeout);
-    } while(rval == OS_OK && rxbuff_idx < len);
+        hal_gpio_write(MCU_GPIO_PORTB(13), 0);
+    } while(rval == OS_OK && fifo_size(rx_fifo) < len);
 
     if(rval == OS_TIMEOUT) {
         console_printf("rplidar_read timeout :(\n");
@@ -89,30 +108,71 @@ int32_t rplidar_read(uint16_t len, os_time_t timeout) {
     } else if(rval == OS_INVALID_PARM) {
         console_printf("rplidar_read invalid param :(\n");
         return -2;
-    } else if(rxbuff_idx < len) {
+    } else if(fifo_size(rx_fifo) < len) {
         console_printf("rplidar_read not enough data read\n");
         return -3;
+    } else if (len > sizeof(rxbuff)) {
+        return -4;
     } else {
+        hal_gpio_write(MCU_GPIO_PORTB(14), 1);
+        while(len--) {
+            *buff++ = fifo_pop(rx_fifo);
+        }
+        hal_gpio_write(MCU_GPIO_PORTB(14), 0);
+
         return 0;
     }
 
 }
 
+int32_t rplidar_validate_response(uint32_t *len, uint8_t *subtype, uint8_t *type) {
+    int32_t rval;
+
+    fifo_flush(rx_fifo);
+
+    rval = rplidar_read(rxbuff, 7, OS_TICKS_PER_SEC);
+
+    if(rval == 0) {
+        rplidar_rsp_header_t *header = (rplidar_rsp_header_t *)rxbuff;
+        if(len) {
+            *len = header->size_subtype & ANS_HEADER_SIZE_MASK;
+        }
+        if(subtype) {
+            *subtype = header->size_subtype >> ANS_HEADER_SUBTYPE_SHIFT;
+        }
+        if(type) {
+            *type = header->type;
+        }
+    }
+
+    return rval;
+}
+
 int32_t rplidar_print_info() {
-    raw_uart_flush_rx();
 
     send_command(CMD_GET_INFO, NULL, 0);
 
-    int32_t rval = rplidar_read(27, OS_TICKS_PER_SEC);
-    if (rval) {
-        console_printf("Error reading (%ld)\n", rval);
-    } else {
-        rplidar_rsp_header_t *header = (rplidar_rsp_header_t *)rxbuff;
-        response_device_info_t *info = (response_device_info_t*)&header[1];
+    uint32_t len = 0;
+    uint32_t rval;
+    do {
+        rval = rplidar_validate_response(&len, NULL, NULL);
+        if(rval) {
+            console_printf("Invalid response (%ld)\n", rval);
+            break;
+        } else if(len != 20) {
+            console_printf("Invalid response data len (%ld)\n", len);
+            rval = -1;
+            break;
+        }
 
-        if(header->sync_byte_1 == 0xA5 && header->sync_byte_2 == 0x5A) {
-            console_printf("size: %ld\nsubtype:%ld\ntype: %02X\n",
-                            header->size_subtype >> 2, header->size_subtype & 0x3, header->type);
+        int32_t rval = rplidar_read(rxbuff, 20, OS_TICKS_PER_SEC);
+        if (rval) {
+            console_printf("Error reading (%ld)\n", rval);
+            break;
+        } else {
+
+            response_device_info_t *info = (response_device_info_t*)rxbuff;
+
             console_printf("Model: %02X\n", info->model);
             console_printf("Firmware Version: %d.%02d\n",
                             info->firmware_version >> 8, info->firmware_version & 0xFF);
@@ -122,7 +182,66 @@ int32_t rplidar_print_info() {
                 console_printf("%02X", info->serialnum[byte]);
             }
             console_printf("\n");
+        }
+    } while (0);
 
+    return rval;
+}
+
+int32_t rplidar_start_scan() {
+    send_command(CMD_SCAN, NULL, 0);
+
+    uint32_t len = 0;
+    uint32_t rval;
+    rval = rplidar_validate_response(&len, NULL, NULL);
+
+    if(rval == 0) {
+        // console_printf("Scan started...%ld\n", len);
+    } else {
+        console_printf("Error starting scan %ld\n", rval);
+    }
+
+    return rval;
+}
+
+int32_t rplidar_stop_scan() {
+    send_command(CMD_STOP, NULL, 0);
+
+    // console_printf("Scan stopped...\n");
+
+    return 0;
+}
+
+
+
+
+int32_t rplidar_run() {
+
+    bool scanning = true;
+    int32_t rval;
+    while(scanning) {
+        rval = rplidar_read(rxbuff, 5, OS_TICKS_PER_SEC);
+
+        if(rval) {
+            break;
+        }
+
+        rplidar_scan_packet_t * packet = (rplidar_scan_packet_t *)rxbuff;
+
+        uint8_t check = packet->quality & 0x3;
+        uint8_t quality = packet->quality >> 2;
+
+        if ((check == 2) && (quality > 0)) {
+            uint16_t angle = (packet->angle >> 1)/64;
+            uint16_t distance = packet->distance/4;
+
+            if(angle < BINS) {
+                distances[angle] = distance;
+            } else {
+                console_printf("FUuUUUuuu %d\n", angle);
+                rval = -1;
+                break;
+            }
         }
     }
 
