@@ -7,7 +7,7 @@
 #include <sysinit/sysinit.h>
 #include <hal/hal_spi.h>
 #include <mcu/stm32_hal.h>
-#include "ws2812.h"
+#include <ws2812b/ws2812b.h>
 
 SPI_HandleTypeDef hspi1;
 DMA_HandleTypeDef hdma_spi1_tx;

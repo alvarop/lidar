@@ -11,4 +11,4 @@ pkg.deps:
     - "@apache-mynewt-core/sys/console/full"
     - "@apache-mynewt-core/sys/log/stub"
     - "libs/drivers/rplidar"
-
+    - "libs/drivers/ws2812b"

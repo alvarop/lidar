@@ -1,0 +1,11 @@
+
+pkg.name: libs/drivers/ws2812b
+pkg.description: WS1812B DMA SPI driver
+pkg.author: "Alvaro Prieto <source@alvaroprieto.com>"
+pkg.homepage: "https://github.com/alvarop/"
+pkg.keywords:
+
+pkg.deps:
+    - "@apache-mynewt-core/hw/hal"
+    - "@apache-mynewt-core/kernel/os"
+    - "@apache-mynewt-core/hw/drivers/uart"

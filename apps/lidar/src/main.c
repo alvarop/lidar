@@ -6,14 +6,13 @@
 #include "console/console.h"
 #include "bsp/bsp.h"
 #include "hal/hal_gpio.h"
-#include "ws2812.h"
 #include <fifo/fifo.h>
-
+#include <ws2812b/ws2812b.h>
 #include <rplidar/rplidar.h>
 
 
 #define BLINK_TASK_PRI         (50)
-#define BLINK_STACK_SIZE       (1024)
+#define BLINK_STACK_SIZE       (256)
 struct os_task blink_task;
 os_stack_t blink_task_stack[BLINK_STACK_SIZE];
 
@@ -31,13 +30,19 @@ void leds_task_fn(void *arg) {
 
     while(1) {
         // hal_gpio_write(MCU_GPIO_PORTB(2), 1);
-        // ws2812_write();
+
         // hal_gpio_write(MCU_GPIO_PORTB(2), 0);
-        os_time_delay(250);
-        for(uint16_t bin = 0; bin < 360; bin++) {
-            console_printf("%04x", distances[bin]);
+
+        for (uint16_t led = 0; led < WS2812_NUM_PIXELS; led++) {
+            ws2812_set_pixel(led,100,0,0);
+            ws2812_write();
+            for(uint16_t bin = 0; bin < 360; bin++) {
+                console_printf("%04x", distances[bin]);
+            }
+            console_printf("\n");
+            os_time_delay(250);
+            ws2812_set_pixel(led,0,0,0);
         }
-        console_printf("\n");
     }
 
 }

@@ -4,4 +4,4 @@ syscfg.vals:
     UART_0: 1
     UART_1: 1
 
-    SPI_0_MASTER: 1
+    SPI_0_MASTER: 0
