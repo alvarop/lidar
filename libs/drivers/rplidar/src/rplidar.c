@@ -11,11 +11,8 @@
 #define RX_BUFF_SIZE    128
 
 static struct os_sem sem_rx_data;
-
 static volatile bool wait_for_rx = false;
-
 static uint8_t rxbuff[RX_BUFF_SIZE];
-
 static fifo_t *rx_fifo;
 
 #define BINS 360
@@ -55,8 +52,6 @@ uint32_t send_command(uint8_t command, const void * payload, uint8_t len) {
 
     return rval;
 }
-
-
 
 void rx_handler(struct os_event *ev) {
     // fifo_t *fifo = ev->ev_arg;
@@ -213,8 +208,6 @@ int32_t rplidar_stop_scan() {
 }
 
 
-
-
 int32_t rplidar_run() {
 
     bool scanning = true;
@@ -238,9 +231,7 @@ int32_t rplidar_run() {
             if(angle < BINS) {
                 distances[angle] = distance;
             } else {
-                console_printf("FUuUUUuuu %d\n", angle);
-                rval = -1;
-                break;
+                // discard
             }
         }
     }

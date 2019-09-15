@@ -7,7 +7,7 @@
 
 static struct uart_dev *uart_dev;
 
-#define RAW_UART_RX_FIFO_SIZE (1024)
+#define RAW_UART_RX_FIFO_SIZE (128)
 
 static fifo_t rx_fifo;
 static uint8_t rx_fifo_buff[RAW_UART_RX_FIFO_SIZE];

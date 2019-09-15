@@ -11,10 +11,10 @@
 #include <rplidar/rplidar.h>
 
 
-#define BLINK_TASK_PRI         (50)
-#define BLINK_STACK_SIZE       (256)
-struct os_task blink_task;
-os_stack_t blink_task_stack[BLINK_STACK_SIZE];
+#define RPLIDAR_TASK_PRI         (50)
+#define RPLIDAR_STACK_SIZE       (256)
+struct os_task rplidar_task;
+os_stack_t rplidar_task_stack[RPLIDAR_STACK_SIZE];
 
 #define LEDS_TASK_PRI         (100)
 #define LEDS_STACK_SIZE       (64)
@@ -41,14 +41,14 @@ void leds_task_fn(void *arg) {
 
 }
 
-void blink_task_fn(void *arg) {
+void rplidar_task_fn(void *arg) {
 
     // console_printf("LIDAR Test!\n");
 
     rplidar_print_info();
 
     rplidar_enable_motor();
-    os_time_delay(OS_TICKS_PER_SEC * 5);
+    os_time_delay(OS_TICKS_PER_SEC * 3);
     rplidar_start_scan();
     int32_t rval = rplidar_run();
 
@@ -67,14 +67,14 @@ main(int argc, char **argv)
 {
     sysinit();
 
-    rplidar_init();
-    ws2812b_init(33);
-
     hal_gpio_init_out(MCU_GPIO_PORTB(2), 0);
     hal_gpio_init_out(MCU_GPIO_PORTB(1), 0);
     hal_gpio_init_out(MCU_GPIO_PORTB(13), 0);
     hal_gpio_init_out(MCU_GPIO_PORTB(14), 0);
     hal_gpio_init_out(MCU_GPIO_PORTB(15), 0);
+
+    rplidar_init();
+    ws2812b_init(33);
 
     os_task_init(
         &leds_task,
@@ -87,14 +87,15 @@ main(int argc, char **argv)
         LEDS_STACK_SIZE);
 
     os_task_init(
-        &blink_task,
-        "blink_task",
-        blink_task_fn,
+        &rplidar_task,
+        "rplidar_task",
+        rplidar_task_fn,
         NULL,
-        BLINK_TASK_PRI,
+        RPLIDAR_TASK_PRI,
         OS_WAIT_FOREVER,
-        blink_task_stack,
-        BLINK_STACK_SIZE);
+        rplidar_task_stack,
+        RPLIDAR_STACK_SIZE);
+
 
     while(1) {
         os_eventq_run(os_eventq_dflt_get());
