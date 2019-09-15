@@ -26,22 +26,16 @@ extern uint32_t SystemCoreClock;
 extern uint16_t distances[360];
 
 void leds_task_fn(void *arg) {
-    ws2812_init();
 
     while(1) {
-        // hal_gpio_write(MCU_GPIO_PORTB(2), 1);
-
-        // hal_gpio_write(MCU_GPIO_PORTB(2), 0);
-
-        for (uint16_t led = 0; led < WS2812_NUM_PIXELS; led++) {
-            ws2812_set_pixel(led,100,0,0);
-            ws2812_write();
+        for (uint16_t led = 0; led < WS2812B_NUM_PIXELS; led++) {
+            ws2812b_set_pixel(led,100,0,0);
             for(uint16_t bin = 0; bin < 360; bin++) {
                 console_printf("%04x", distances[bin]);
             }
             console_printf("\n");
-            os_time_delay(250);
-            ws2812_set_pixel(led,0,0,0);
+            os_time_delay(30);
+            ws2812b_set_pixel(led,0,0,0);
         }
     }
 
@@ -63,17 +57,6 @@ void blink_task_fn(void *arg) {
     }
 
     while(1) {
-        // for (uint16_t led = 0; led < WS2812_NUM_PIXELS; led++) {
-        //     ws2812_set_pixel(led,100,0,0);
-        //     os_time_delay(20);
-        //     ws2812_set_pixel(led,0,0,0);
-        // }
-
-        // for (uint16_t led = WS2812_NUM_PIXELS-2; led > 1; led--) {
-        //     ws2812_set_pixel(led,100,0,0);
-        //     os_time_delay(20);
-        //     ws2812_set_pixel(led,0,0,0);
-        // }
         os_time_delay(1000);
     }
 
@@ -85,13 +68,13 @@ main(int argc, char **argv)
     sysinit();
 
     rplidar_init();
+    ws2812b_init(33);
 
     hal_gpio_init_out(MCU_GPIO_PORTB(2), 0);
     hal_gpio_init_out(MCU_GPIO_PORTB(1), 0);
     hal_gpio_init_out(MCU_GPIO_PORTB(13), 0);
     hal_gpio_init_out(MCU_GPIO_PORTB(14), 0);
     hal_gpio_init_out(MCU_GPIO_PORTB(15), 0);
-
 
     os_task_init(
         &leds_task,
@@ -112,7 +95,6 @@ main(int argc, char **argv)
         OS_WAIT_FOREVER,
         blink_task_stack,
         BLINK_STACK_SIZE);
-
 
     while(1) {
         os_eventq_run(os_eventq_dflt_get());
