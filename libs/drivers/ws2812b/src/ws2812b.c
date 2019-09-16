@@ -10,23 +10,23 @@
 #include <ws2812b/ws2812b.h>
 
 
-#define WS2812B_TASK_PRI         (99)
-#define WS2812B_STACK_SIZE       (128)
-static struct os_task ws2812b_task;
-static os_stack_t ws2812b_task_stack[WS2812B_STACK_SIZE];
-
 static SPI_HandleTypeDef hspi1;
 static DMA_HandleTypeDef hdma_spi1_tx;
 
 static struct os_sem sem_writing;
+
+static struct os_callout ws2812b_callout;
 
 static uint32_t refresh_ticks = 100;
 
 // Number of actual bytes it takes to encode WS2812 byte with 3MHz spi clock
 #define BYTE_LEN (3)
 
-// Last byte must be zero
 static uint8_t pattern[BYTE_LEN * 3 * WS2812B_NUM_PIXELS];
+
+ws2812b_led_t leds[WS2812B_NUM_PIXELS];
+
+
 
 // Look up table for all 256 bytes
 static const uint8_t ws2812b_lut[256][BYTE_LEN] = {
@@ -104,27 +104,23 @@ void HAL_SPI_MspInit(SPI_HandleTypeDef* hspi) {
 
 }
 
-static void ws2812b_task_fn(void *arg) {
-    while(1) {
-        ws2812b_write();
-        os_time_delay(refresh_ticks);
-    }
-}
-
-void ws2812b_set_pixel(uint16_t pixel, uint8_t red, uint8_t green, uint8_t blue) {
-    hal_gpio_write(MCU_GPIO_PORTB(1), 1);
-    if (pixel < WS2812B_NUM_PIXELS) {
-        uint8_t *pixel_addr = &pattern[pixel * BYTE_LEN * 3];
-        memcpy(&pixel_addr[0], ws2812b_lut[green], BYTE_LEN);
-        memcpy(&pixel_addr[BYTE_LEN], ws2812b_lut[red], BYTE_LEN);
-        memcpy(&pixel_addr[BYTE_LEN * 2], ws2812b_lut[blue], BYTE_LEN);
-    }
-    hal_gpio_write(MCU_GPIO_PORTB(1), 0);
+void ws2812b_callout_fn(struct os_event *ev) {
+    os_callout_reset(&ws2812b_callout, refresh_ticks);
+    ws2812b_write();
 }
 
 void ws2812b_write() {
     // Only write if we're not already writing
     if(os_sem_pend(&sem_writing, 0) == OS_OK) {
+        hal_gpio_write(MCU_GPIO_PORTB(13), 1);
+        for(uint16_t index = 0; index < WS2812B_NUM_PIXELS; index++) {
+            uint8_t *pixel_addr = &pattern[index * BYTE_LEN * 3];
+            memcpy(&pixel_addr[0], ws2812b_lut[leds[index].green], BYTE_LEN);
+            memcpy(&pixel_addr[BYTE_LEN], ws2812b_lut[leds[index].red], BYTE_LEN);
+            memcpy(&pixel_addr[BYTE_LEN * 2], ws2812b_lut[leds[index].blue], BYTE_LEN);
+        }
+        hal_gpio_write(MCU_GPIO_PORTB(13), 0);
+        hal_gpio_write(MCU_GPIO_PORTB(1), 1);
         HAL_SPI_Transmit_DMA(&hspi1, pattern, sizeof(pattern));
     }
 }
@@ -170,22 +166,17 @@ int32_t ws2812b_init(uint32_t period_ms) {
 
     HAL_SPI_MspInit(&hspi1);
 
-    for(uint16_t pixel = 0; pixel < WS2812B_NUM_PIXELS; pixel++) {
-        ws2812b_set_pixel(pixel, 0, 0 ,0);
+    for(uint16_t index = 0; index < WS2812B_NUM_PIXELS; index++) {
+        leds[index].green = 0;
+        leds[index].red = 0;
+        leds[index].blue = 0;
     }
 
     ws2812b_set_period(period_ms);
 
+    os_callout_init(&ws2812b_callout, os_eventq_dflt_get(), ws2812b_callout_fn, NULL);
     if(period_ms > 0) {
-        os_task_init(
-            &ws2812b_task,
-            "ws2812b_task",
-            ws2812b_task_fn,
-            NULL,
-            WS2812B_TASK_PRI,
-            OS_WAIT_FOREVER,
-            ws2812b_task_stack,
-            WS2812B_STACK_SIZE);
+        os_callout_reset(&ws2812b_callout, refresh_ticks);
     }
 
 
@@ -194,6 +185,7 @@ int32_t ws2812b_init(uint32_t period_ms) {
 
 void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi) {
   if (hspi == &hspi1) {
-      os_sem_release(&sem_writing);
+    hal_gpio_write(MCU_GPIO_PORTB(1), 0);
+    os_sem_release(&sem_writing);
   }
 }

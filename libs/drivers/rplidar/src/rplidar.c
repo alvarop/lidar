@@ -92,9 +92,7 @@ int32_t rplidar_read(uint8_t *buff, uint16_t len, os_time_t timeout) {
 
     do {
         wait_for_rx = true;
-        hal_gpio_write(MCU_GPIO_PORTB(13), 1);
         rval = os_sem_pend(&sem_rx_data, timeout);
-        hal_gpio_write(MCU_GPIO_PORTB(13), 0);
     } while(rval == OS_OK && fifo_size(rx_fifo) < len);
 
     if(rval == OS_TIMEOUT) {

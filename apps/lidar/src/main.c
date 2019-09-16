@@ -16,6 +16,11 @@
 struct os_task rplidar_task;
 os_stack_t rplidar_task_stack[RPLIDAR_STACK_SIZE];
 
+#define RPLIDAR_PRINT_TASK_PRI         (98)
+#define RPLIDAR_PRINT_STACK_SIZE       (256)
+struct os_task rplidar_print_task;
+os_stack_t rplidar_print_task_stack[RPLIDAR_PRINT_STACK_SIZE];
+
 #define LEDS_TASK_PRI         (100)
 #define LEDS_STACK_SIZE       (64)
 struct os_task leds_task;
@@ -25,20 +30,28 @@ extern uint32_t SystemCoreClock;
 
 extern uint16_t distances[360];
 
+extern ws2812b_led_t leds[WS2812B_NUM_PIXELS];
+
 void leds_task_fn(void *arg) {
 
     while(1) {
         for (uint16_t led = 0; led < WS2812B_NUM_PIXELS; led++) {
-            ws2812b_set_pixel(led,100,0,0);
-            for(uint16_t bin = 0; bin < 360; bin++) {
-                console_printf("%04x", distances[bin]);
-            }
-            console_printf("\n");
+            leds[led].green = 100;
             os_time_delay(30);
-            ws2812b_set_pixel(led,0,0,0);
+            leds[led].green = 0;
         }
     }
 
+}
+
+void rplidar_print_task_fn(void *arg) {
+    while(1) {
+        for(uint16_t bin = 0; bin < 360; bin++) {
+            console_printf("%04x", distances[bin]);
+        }
+        console_printf("\n");
+        os_time_delay(30);
+    }
 }
 
 void rplidar_task_fn(void *arg) {
@@ -95,6 +108,16 @@ main(int argc, char **argv)
         OS_WAIT_FOREVER,
         rplidar_task_stack,
         RPLIDAR_STACK_SIZE);
+
+    os_task_init(
+        &rplidar_print_task,
+        "rplidar_print_task",
+        rplidar_print_task_fn,
+        NULL,
+        RPLIDAR_PRINT_TASK_PRI,
+        OS_WAIT_FOREVER,
+        rplidar_print_task_stack,
+        RPLIDAR_PRINT_STACK_SIZE);
 
 
     while(1) {
