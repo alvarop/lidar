@@ -32,13 +32,46 @@ extern uint16_t distances[360];
 
 extern ws2812b_led_t leds[WS2812B_NUM_PIXELS];
 
+uint8_t fade_amount = 1;
+
+void fade() {
+    hal_gpio_write(MCU_GPIO_PORTB(14), 1);
+    for (uint16_t led = 0; led < WS2812B_NUM_PIXELS; led++) {
+        if(leds[led].green > fade_amount) {
+            leds[led].green -= fade_amount;
+        } else {
+            leds[led].green = 0;
+        }
+
+        if(leds[led].red > fade_amount) {
+            leds[led].red -= fade_amount;
+        } else {
+            leds[led].red = 0;
+        }
+
+        if(leds[led].blue > fade_amount) {
+            leds[led].blue -= fade_amount;
+        } else {
+            leds[led].blue = 0;
+        }
+    }
+    hal_gpio_write(MCU_GPIO_PORTB(14), 0);
+}
+
 void leds_task_fn(void *arg) {
 
     while(1) {
-        for (uint16_t led = 0; led < WS2812B_NUM_PIXELS; led++) {
-            leds[led].green = 100;
-            os_time_delay(30);
-            leds[led].green = 0;
+        uint16_t led = 0;
+
+        while(led < WS2812B_NUM_PIXELS){
+            for(uint8_t sub_count = 0; sub_count < 10; sub_count++){
+                leds[led].green = 10 * sub_count + 10;
+                leds[led].red = 10 * sub_count + 10;
+                leds[led].blue = 10 * sub_count + 10;
+                fade();
+                os_time_delay(30);
+            }
+            led++;
         }
     }
 
@@ -87,7 +120,7 @@ main(int argc, char **argv)
     hal_gpio_init_out(MCU_GPIO_PORTB(15), 0);
 
     rplidar_init();
-    ws2812b_init(33);
+    ws2812b_init(10);
 
     os_task_init(
         &leds_task,

@@ -107,11 +107,9 @@ int32_t rplidar_read(uint8_t *buff, uint16_t len, os_time_t timeout) {
     } else if (len > sizeof(rxbuff)) {
         return -4;
     } else {
-        hal_gpio_write(MCU_GPIO_PORTB(14), 1);
         while(len--) {
             *buff++ = fifo_pop(rx_fifo);
         }
-        hal_gpio_write(MCU_GPIO_PORTB(14), 0);
 
         return 0;
     }
