@@ -22,7 +22,8 @@ static uint32_t refresh_ticks = 100;
 // Number of actual bytes it takes to encode WS2812 byte with 3MHz spi clock
 #define BYTE_LEN (3)
 
-static uint8_t pattern[BYTE_LEN * 3 * WS2812B_NUM_PIXELS];
+// One extra byte to make sure the spi line stays low
+static uint8_t pattern[BYTE_LEN * 3 * WS2812B_NUM_PIXELS + 1];
 
 ws2812b_led_t leds[WS2812B_NUM_PIXELS];
 
@@ -165,6 +166,8 @@ int32_t ws2812b_init(uint32_t period_ms) {
     assert(HAL_SPI_Init(&hspi1) == HAL_OK);
 
     HAL_SPI_MspInit(&hspi1);
+
+    pattern[sizeof(pattern)] = 0;
 
     for(uint16_t index = 0; index < WS2812B_NUM_PIXELS; index++) {
         leds[index].green = 0;
