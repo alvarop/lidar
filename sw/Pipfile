@@ -6,10 +6,10 @@ verify_ssl = true
 [dev-packages]
 
 [packages]
-pyserial = "*"
+numpy = "*"
 pyopengl = "*"
 pyopengl-accelerate = "*"
-numpy = "*"
+pyserial = "*"
 
 [requires]
-python_version = "3.6"
+python_version = "3.7"

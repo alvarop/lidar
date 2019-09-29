@@ -1,3 +1,4 @@
+import sys
 from OpenGL.GL import *
 from OpenGL.GLUT import *
 from OpenGL.GLU import *
@@ -5,14 +6,14 @@ import numpy as np
 
 import serial
 
-w_size = 2000
-h_size = 2000
+w_size = 1000
+h_size = 1000
 
-ser = serial.Serial("/dev/ttyACM1", baudrate=115200)
+ser = serial.Serial(sys.argv[1], baudrate=115200)
 ser.flush()
 count = 0
 
-scale = 1.0 / 10
+scale = 1.0 / 20
 
 
 def reduce(distances, num_segments):
