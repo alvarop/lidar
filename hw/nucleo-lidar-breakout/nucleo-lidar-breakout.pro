@@ -1,4 +1,4 @@
-update=Sun 29 Sep 2019 05:20:23 AM PDT
+update=Sun 29 Sep 2019 11:55:37 AM PDT
 version=1
 last_client=kicad
 [general]
@@ -12,10 +12,20 @@ NetIExt=net
 version=1
 LibDir=
 [eeschema/libraries]
+[schematic_editor]
+version=1
+PageLayoutDescrFile=
+PlotDirectoryName=
+SubpartIdSeparator=0
+SubpartFirstId=65
+NetFmtName=Pcbnew
+SpiceAjustPassiveValues=0
+LabSize=50
+ERC_TestSimilarLabels=1
 [pcbnew]
 version=1
 PageLayoutDescrFile=
-LastNetListRead=
+LastNetListRead=nucleo-lidar-breakout.net
 CopperLayerCount=2
 BoardThickness=1.6
 AllowMicroVias=0
@@ -38,6 +48,9 @@ TrackWidth7=0.5
 TrackWidth8=0.6
 TrackWidth9=0.75
 TrackWidth10=1
+TrackWidth11=1.5
+TrackWidth12=2
+TrackWidth13=2.5
 ViaDiameter1=0.508
 ViaDrill1=0.254
 ViaDiameter2=0.508
