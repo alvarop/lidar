@@ -12,8 +12,8 @@ from OpenGL.GLUT import *
 from OpenGL.GLU import *
 
 # OpenGL window size
-w_size = 1000
-h_size = 1000
+w_size = 600
+h_size = 600
 
 # OpenGL scale pixel/mm
 scale = 1.0 / 20
@@ -39,6 +39,15 @@ def playback():
     if current_time > data[0][0]:
         distances = data[0][1]
         del data[0]
+
+    glBegin(GL_LINES)
+    glColor3f(0.4, 0.0, 0.0)
+    glVertex2f(w_size / 2 - 10, h_size / 2)
+    glVertex2f(w_size / 2 + 10, h_size / 2)
+    glVertex2f(w_size / 2, h_size / 2 - 10)
+    glVertex2f(w_size / 2, h_size / 2 + 10)
+    glEnd()
+
 
     glBegin(GL_POINTS)
     glColor3f(0.224, 1.0, 0.078)
