@@ -12,3 +12,5 @@ tags
 *.swo
 *.log
 repos/
+*.lock
+*.out
