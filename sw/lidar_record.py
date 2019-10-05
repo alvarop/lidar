@@ -7,6 +7,7 @@ import time
 import serial
 import argparse
 import pickle
+import os
 
 # 2 bytes as hex strings is 4 characters
 LINE_LEN = 360 * 4
@@ -40,8 +41,13 @@ parser.add_argument(
 )
 parser.add_argument("--outfile", help="Output filename")
 parser.add_argument("serial_port", help="Serial Port")
+parser.add_argument("--force", action="store_true", help="Allow file overwriting")
 
 args = parser.parse_args()
+
+if args.outfile and os.path.isfile(args.outfile) and not args.force:
+    print("ERROR: File exists. Use --force to overwrite")
+    sys.exit(-1)
 
 ser = serial.Serial(args.serial_port, baudrate=args.baud_rate)
 
@@ -50,5 +56,6 @@ while (time.time() - start_time) < args.duration:
 
 if args.outfile:
     print("Saving dump to " + args.outfile)
-    with open(args.outfile, 'wb') as dump_file:
+
+    with open(args.outfile, "wb") as dump_file:
         pickle.dump(data, dump_file)
