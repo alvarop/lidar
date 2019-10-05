@@ -27,8 +27,12 @@ def read_data():
         value = int(line[(angle * 4) : ((angle * 4) + 4)], 16)
         raw_distances.append(value)
 
-    data.append(((time.time() - start_time), raw_distances))
-    print(time.time() - start_time)
+    sample_time = time.time() - start_time
+
+    data.append((sample_time, raw_distances))
+    sys.stdout.write("\b" * 20)  # Clear the previous line
+    sys.stdout.write("[{}] {:0.3f}s".format(len(data), sample_time))
+    sys.stdout.flush()
 
 
 parser = argparse.ArgumentParser()
@@ -53,6 +57,8 @@ ser = serial.Serial(args.serial_port, baudrate=args.baud_rate)
 
 while (time.time() - start_time) < args.duration:
     read_data()
+
+sys.stdout.write("\n")
 
 if args.outfile:
     print("Saving dump to " + args.outfile)
