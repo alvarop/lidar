@@ -11,6 +11,7 @@ import pickle
 # 2 bytes as hex strings is 4 characters
 LINE_LEN = 360 * 4
 
+
 def read_data():
     line = ser.readline().strip()
     if len(line) != LINE_LEN:
@@ -32,7 +33,7 @@ parser.add_argument("filename", help="Dump filename")
 args = parser.parse_args()
 
 print("Opening " + args.filename)
-with open(args.filename, 'rb') as dump_file:
+with open(args.filename, "rb") as dump_file:
     data = pickle.load(dump_file)
 
     start_time = time.time()
