@@ -4,9 +4,9 @@
 #include <hal/hal_gpio.h>
 #include <raw_uart/raw_uart.h>
 #include <fifo/fifo.h>
+#include <stdbool.h>
 #include "protocol.h"
 #include "commands.h"
-#include <stdbool.h>
 
 #define RX_BUFF_SIZE    128
 
@@ -208,6 +208,9 @@ int32_t rplidar_run() {
 
     bool scanning = true;
     int32_t rval;
+    int16_t current_angle = -1;
+    uint32_t current_distance = 0;
+
     while(scanning) {
         rval = rplidar_read(rxbuff, 5, OS_TICKS_PER_SEC);
 
@@ -218,14 +221,24 @@ int32_t rplidar_run() {
         rplidar_scan_packet_t * packet = (rplidar_scan_packet_t *)rxbuff;
 
         uint8_t check = packet->quality & 0x3;
-        uint8_t quality = packet->quality >> 2;
+        // uint8_t quality = packet->quality >> 2;
 
-        if ((check == 2) && (quality > 0)) {
+        if (check == 2) {
             uint16_t angle = (packet->angle >> 1)/64;
             uint16_t distance = packet->distance/4;
 
             if(angle < BINS) {
+                if (angle == current_angle) {
+                    // Average both measurements
+                    current_distance += distance;
+                    current_distance /= 2;
+                    distance = current_distance;
+                } else {
+                    current_distance = 0;
+                }
+
                 distances[angle] = distance;
+                current_angle = angle;
             } else {
                 // discard
             }
