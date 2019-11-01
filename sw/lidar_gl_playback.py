@@ -30,14 +30,18 @@ def playback():
         sys.exit()
         return
 
-    print((time.time() - start_time) * args.speed)
+    current_time = (time.time() - start_time) * args.speed
 
-    if (time.time() - start_time) * args.speed > data[0][0]:
+    sys.stdout.write("\b" * 10)  # Clear the previous line
+    sys.stdout.write("{:0.3f}".format(current_time))
+    sys.stdout.flush()
+
+    if current_time > data[0][0]:
         distances = data[0][1]
         del data[0]
 
     glBegin(GL_POINTS)
-    glColor3f(0.224, 1.0, .078)
+    glColor3f(0.224, 1.0, 0.078)
     for angle in range(360):
         y = distances[angle] * scale * np.cos(np.deg2rad(angle + args.angle_adj))
         x = distances[angle] * scale * np.sin(np.deg2rad(angle + args.angle_adj))

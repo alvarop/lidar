@@ -11,21 +11,6 @@ import pickle
 # 2 bytes as hex strings is 4 characters
 LINE_LEN = 360 * 4
 
-
-def read_data():
-    line = ser.readline().strip()
-    if len(line) != LINE_LEN:
-        return
-
-    raw_distances = []
-    for angle in range(360):
-        value = int(line[(angle * 4) : ((angle * 4) + 4)], 16)
-        raw_distances.append(value)
-
-    data.append(((time.time() - start_time), raw_distances))
-    print(time.time() - start_time)
-
-
 parser = argparse.ArgumentParser()
 
 parser.add_argument("filename", help="Dump filename")
@@ -42,4 +27,7 @@ with open(args.filename, "rb") as dump_file:
         while (time.time() - start_time) < sample_time:
             time.sleep(0.01)
         del data[0]
-        print(sample_time, line)
+
+        sys.stdout.write("\b" * 10)  # Clear the previous line
+        sys.stdout.write("{:0.3f}".format(sample_time))
+        sys.stdout.flush()
