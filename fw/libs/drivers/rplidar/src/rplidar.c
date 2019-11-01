@@ -64,17 +64,17 @@ void rx_handler(struct os_event *ev) {
 }
 
 void rplidar_enable_motor() {
-    hal_gpio_write(MCU_GPIO_PORTC(4), 1);
+    hal_gpio_write(MCU_GPIO_PORTB(0), 1);
 }
 
 void rplidar_disable_motor() {
-    hal_gpio_write(MCU_GPIO_PORTC(4), 0);
+    hal_gpio_write(MCU_GPIO_PORTB(0), 0);
 }
 
 int32_t rplidar_init() {
     console_printf("RPLidar Init\n");
 
-    hal_gpio_init_out(MCU_GPIO_PORTC(4), 0);
+    hal_gpio_init_out(MCU_GPIO_PORTB(0), 0);
 
     wait_for_rx = false;
     os_sem_init(&sem_rx_data, 0);
