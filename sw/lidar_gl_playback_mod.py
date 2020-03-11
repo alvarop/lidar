@@ -60,6 +60,31 @@ def playback():
     glVertex2f(w_size / 2, h_size / 2 + 10)
     glEnd()
 
+    glBegin(GL_LINES)
+    glColor3f(0.25, 0.25, 0.25)
+    for x in range(-int(w_size/2)+int(w_size/num_div), int(w_size/2), int(w_size/num_div)):
+        glVertex2f(w_size/2 + x, 0)
+        glVertex2f(w_size/2 + x, w_size)
+
+    for y in range(-int(h_size/2)+int(h_size/num_div), int(h_size/2), int(h_size/num_div)):
+        glVertex2f(0, h_size/2 + y)
+        glVertex2f(w_size, h_size/2 + y)
+    glEnd()
+
+    for r in range(int(w_size/num_div),int(w_size/2), int(w_size/num_div)):
+        draw_circle(w_size/2, h_size/2, r, steps = 90)
+
+    glBegin(GL_LINES)
+    glColor3f(0.5, 0.5, 0.5)
+    for angle in range(num_div*2):
+        x_p = w_size/2 + w_size/2 * np.sin(2 * np.pi * angle / (num_div*2))
+        y_p = h_size/2 + h_size/2 * np.cos(2 * np.pi * angle / (num_div*2))        
+        glVertex2f(w_size/2, h_size/2)
+        glVertex2f(x_p, y_p)
+
+
+    glEnd()
+
     glEnable(GL_PROGRAM_POINT_SIZE)
     glPointSize(2.5)
     glBegin(GL_POINTS)

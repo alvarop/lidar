@@ -12,15 +12,13 @@ from OpenGL.GLUT import *
 from OpenGL.GLU import *
 
 # OpenGL window size
-w_size = 600
+w_size = 1000
 h_size = 600
 
 # OpenGL scale pixel/mm
 scale = 1.0 / 20
 
 angle_adj = 0
-
-distances = [0] * 360
 
 num_div = 30
 
@@ -35,8 +33,41 @@ def draw_circle(x,y,r,steps=360):
 
     glEnd()
 
+def draw_bargraph(distances, box_width=2, max_height=500, color=(0.2,0,0.25)):
+    
+    glBegin(GL_QUADS)
+    glColor3f(*color)
+    for angle in range(360):
+        x_l = angle * box_width
+        x_r = angle * box_width + box_width
+        h = distances[angle] / 5000 * max_height
+
+        glVertex2f(x_l, 0)
+        glVertex2f(x_r, 0)
+        glVertex2f(x_r, h)
+        glVertex2f(x_l, h)
+    glEnd()
+
+last_samples = [0] * 360
+def process_data(samples):
+    global last_samples
+
+    distances = []
+    for index in range(len(samples)):
+        if samples[index] == 0:
+            distances.append(last_samples[index])
+        else:
+            distances.append(samples[index])
+    # distances = data[0][1]
+
+    last_samples = samples
+
+    return distances
+    
+distances = [0] * 360
+last_distances = [0] * 360
 def playback():
-    global data, start_time, distances
+    global data, start_time, distances, last_distances
 
     if len(data) == 0:
         sys.exit()
@@ -49,8 +80,8 @@ def playback():
     sys.stdout.flush()
 
     if current_time > data[0][0]:
-        distances = data[0][1]
-        del data[0]
+        distances = process_data(data[0][1])
+        del data[0] 
 
     glBegin(GL_LINES)
     glColor3f(0.4, 0.0, 0.0)
@@ -59,6 +90,15 @@ def playback():
     glVertex2f(w_size / 2, h_size / 2 - 10)
     glVertex2f(w_size / 2, h_size / 2 + 10)
     glEnd()
+
+    draw_bargraph(distances)
+
+    diff = []
+    for index in range(len(distances)):
+        diff.append(abs(distances[index]-last_distances[index]))
+    draw_bargraph(diff,color=(1,1,1))
+    
+    last_distances = distances
 
     glEnable(GL_PROGRAM_POINT_SIZE)
     glPointSize(2.5)
@@ -71,13 +111,14 @@ def playback():
         glVertex2f(w_size / 2 + x, h_size / 2 + y)
     glEnd()
 
+    
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--speed", default=1.0, type=float, help="Playback speed")
 parser.add_argument("--angle_adj", default=0, type=float, help="Angle adjustment")
 parser.add_argument("filename", help="Dump filename")
 args = parser.parse_args()
-
 
 def iterate():
     glViewport(0, 0, w_size, h_size)
